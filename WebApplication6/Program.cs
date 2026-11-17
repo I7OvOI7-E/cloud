@@ -7,7 +7,7 @@ using WebApplication6.Service;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddAWSLambdaHosting(LambdaEventSource.RestApi); 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddEndpointsApiExplorer();
