@@ -1,0 +1,81 @@
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="row justify-content-center py-4 py-md-5">
+    <div class="col-md-8 col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <p class="text-success fw-semibold mb-2">FoodHero</p>
+                <h1 class="h3 mb-2">Welcome back</h1>
+                <p class="text-muted mb-4">Sign in to your FoodHero account.</p>
+
+                <form id="login-form" method="post" novalidate>
+                    <div id="login-message" class="alert" role="status" aria-live="polite" hidden></div>
+
+                    <div class="mb-4">
+                        <label for="login-username" class="form-label">Username</label>
+                        <input id="login-username" class="form-control" type="text"
+                               autocomplete="username" placeholder="Enter your username" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="login-password" class="form-label">Password</label>
+                        <input id="login-password" class="form-control" type="password"
+                               autocomplete="current-password" />
+                        <div class="form-text">Password verification is not connected yet.</div>
+                    </div>
+
+                    <button class="btn btn-success w-100" type="submit">Login</button>
+                </form>
+
+                <p class="text-center mt-4 mb-0">
+                    New to FoodHero? <a asp-controller="Home" asp-action="Register" class="text-success">Create an account</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const form = document.getElementById('login-form');
+        const msg = document.getElementById('login-message');
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('login-username').value.trim();
+            if (!username) return show('Please enter a username.', 'danger');
+
+            const urls = ['/SchoolStaff/users', '/RecipientStaff/users', '/Volunteer/users'];
+
+            for (const url of urls) {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok) continue;
+
+                    const users = await res.json();
+                    const user = users.find(u => (u.fullName ?? u.FullName) === username);
+
+                    if (user) {
+                        localStorage.setItem('foodhero.user', JSON.stringify(user));
+                        const role = user.role ?? user.Role;
+                        location.href = '@Url.Action("Index", "Home")' + '?role=' + encodeURIComponent(role);
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Lookup failed for', url, err);
+                }
+            }
+
+            show('Username not found.', 'danger');
+        });
+
+        function show(text, type) {
+            msg.className = 'alert alert-' + type;
+            msg.textContent = text;
+            msg.hidden = false;
+        }
+    })();
+</script>

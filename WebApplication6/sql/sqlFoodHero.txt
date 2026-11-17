@@ -1,0 +1,93 @@
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Organizations')
+CREATE TABLE Organizations (
+    OrganizationId INT IDENTITY(1,1) NOT NULL,
+    OrganizationName NVARCHAR(150) NOT NULL,
+    OrganizationType VARCHAR(20) NOT NULL,
+    Address NVARCHAR(500) NOT NULL,
+    Phone NVARCHAR(30),
+    CreatedAt DATETIME2 NOT NULL,
+    PRIMARY KEY (OrganizationId)
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Users')
+CREATE TABLE Users (
+    UserId INT IDENTITY(1,1) NOT NULL,
+    OrganizationId INT NOT NULL,
+    FullName NVARCHAR(100) NOT NULL,
+    Email NVARCHAR(254) NOT NULL,
+    AuthSubject NVARCHAR(200) NOT NULL,
+    Role VARCHAR(20) NOT NULL,
+    CreatedAt DATETIME2 NOT NULL,
+    Password NCHAR(100),
+    PRIMARY KEY (UserId),
+    FOREIGN KEY (OrganizationId) REFERENCES Organizations(OrganizationId) ON DELETE CASCADE
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'FoodCategories')
+CREATE TABLE FoodCategories (
+    CategoryId INT IDENTITY(1,1) NOT NULL,
+    CategoryName NVARCHAR(100) NOT NULL,
+    PRIMARY KEY (CategoryId)
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'FoodListings')
+CREATE TABLE FoodListings (
+    FoodId INT IDENTITY(1,1) NOT NULL,
+    SchoolOrganizationId INT NOT NULL,
+    CreatedByUserId INT NOT NULL,
+    CategoryId INT NOT NULL,
+    FoodName NVARCHAR(150) NOT NULL,
+    Description NVARCHAR(1000),
+    QuantityAvailable INT NOT NULL,
+    Unit NVARCHAR(30) NOT NULL,
+    PickupAddress NVARCHAR(500) NOT NULL,
+    AvailableFrom DATETIME2 NOT NULL,
+    CollectBy DATETIME2 NOT NULL,
+    Status VARCHAR(20) NOT NULL,
+    CreatedAt DATETIME2 NOT NULL,
+    PRIMARY KEY (FoodId),
+    FOREIGN KEY (SchoolOrganizationId) REFERENCES Organizations(OrganizationId) ON DELETE CASCADE,
+    FOREIGN KEY (CreatedByUserId) REFERENCES Users(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (SchoolOrganizationId) REFERENCES Users(OrganizationId) ON DELETE CASCADE,
+    FOREIGN KEY (CategoryId) REFERENCES FoodCategories(CategoryId) ON DELETE CASCADE
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'FoodImages')
+CREATE TABLE FoodImages (
+    ImageId INT IDENTITY(1,1) NOT NULL,
+    FoodId INT NOT NULL,
+    ImageObjectKey NVARCHAR(500) NOT NULL,
+    UploadedAt DATETIME2 NOT NULL,
+    PRIMARY KEY (ImageId),
+    FOREIGN KEY (FoodId) REFERENCES FoodListings(FoodId) ON DELETE CASCADE
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'PickupRequests')
+CREATE TABLE PickupRequests (
+    RequestId INT IDENTITY(1,1) NOT NULL,
+    FoodId INT NOT NULL,
+    RecipientOrganizationId INT NOT NULL,
+    RequestedByUserId INT NOT NULL,
+    QuantityRequested INT NOT NULL,
+    Status VARCHAR(20) NOT NULL,
+    Notes NVARCHAR(1000),
+    RequestedAt DATETIME2 NOT NULL,
+    PRIMARY KEY (RequestId),
+    FOREIGN KEY (RecipientOrganizationId) REFERENCES Organizations(OrganizationId) ON DELETE CASCADE,
+    FOREIGN KEY (RequestedByUserId) REFERENCES Users(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (RecipientOrganizationId) REFERENCES Users(OrganizationId) ON DELETE CASCADE,
+    FOREIGN KEY (FoodId) REFERENCES FoodListings(FoodId) ON DELETE CASCADE
+);
+
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Pickups')
+CREATE TABLE Pickups (
+    PickupId INT IDENTITY(1,1) NOT NULL,
+    RequestId INT NOT NULL,
+    ConfirmedByUserId INT NOT NULL,
+    CollectedAt DATETIME2 NOT NULL,
+    Notes NVARCHAR(1000),
+    PRIMARY KEY (PickupId),
+    FOREIGN KEY (ConfirmedByUserId) REFERENCES Users(UserId) ON DELETE CASCADE,
+    FOREIGN KEY (RequestId) REFERENCES PickupRequests(RequestId) ON DELETE CASCADE
+);
+

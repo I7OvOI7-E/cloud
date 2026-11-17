@@ -1,0 +1,141 @@
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center py-4 py-md-5">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4 p-md-5">
+                <p class="text-success fw-semibold mb-2">FoodHero</p>
+                <h1 class="h3 mb-2">Create your account</h1>
+                <p class="text-muted mb-4">Help good food reach the people who need it.</p>
+
+                <form id="register-form" method="post" novalidate>
+                    <div id="register-message" class="alert" role="status" aria-live="polite" hidden></div>
+
+                    <div class="mb-3">
+                        <label for="register-username" class="form-label">Username</label>
+                        <input id="register-username" class="form-control" type="text"
+                               autocomplete="username" placeholder="Choose a username" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-password" class="form-label">Password</label>
+                        <input id="register-password" class="form-control" type="password"
+                               autocomplete="new-password" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-email" class="form-label">Email</label>
+                        <input id="register-email" class="form-control" type="email"
+                               autocomplete="email" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="register-role" class="form-label">Your role</label>
+                        <select id="register-role" class="form-select" required>
+                            <option value="" selected disabled>Select your role</option>
+                            <option value="SCHOOL_STAFF">School Staff</option>
+                            <option value="RECIPIENT_STAFF">Recipient Staff</option>
+                            <option value="VOLUNTEER">Volunteer</option>
+                        </select>
+                    </div>
+
+<div class="mb-4">
+    <label for="register-organization" class="form-label">Organization</label>
+    <select id="register-organization" class="form-select" required>
+        <option value="" selected disabled>Loading organizations...</option>
+    </select>
+    <div id="organization-help" class="form-text">Pick the organization you belong to.</div>
+</div>
+
+                    <button class="btn btn-success w-100" type="submit">Create account</button>
+                </form>
+
+                <p class="text-center mt-4 mb-0">
+                    Already have an account? <a asp-controller="Home" asp-action="Login" class="text-success">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        const form = document.getElementById('register-form');
+        const msg = document.getElementById('register-message');
+
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const username = document.getElementById('register-username').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const role = document.getElementById('register-role').value;
+            const organizationId = parseInt(document.getElementById('register-organization').value, 10);
+            const password = document.getElementById('register-password').value;
+
+            if (!username || !email || !password || !role || !organizationId) {
+                return show('Please fill in all fields.', 'danger');
+            }
+
+            const endpoints = {
+                SCHOOL_STAFF:    '/SchoolStaff/createuser',
+                RECIPIENT_STAFF: '/RecipientStaff/createuser',
+                VOLUNTEER:       '/Volunteer/createuser'
+            };
+            const url = endpoints[role];
+            if (!url) return show('Unknown role.', 'danger');
+
+            const body = {
+                FullName:       username,
+                Email:          email,
+                AuthSubject:    username,
+                Password:       password,
+                Role:           role,
+                OrganizationId: organizationId
+            };
+
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+
+                if (res.ok) {
+                    show('Account created. Redirecting to login...', 'success');
+                    setTimeout(() => location.href = '@Url.Action("Login", "Home")', 700);
+                } else {
+                    const text = await res.text();
+                    const message = text.includes('Violation of UNIQUE KEY constraint')
+                        ? 'Username or email already exists.'
+                        : 'Registration failed. Please try again.';
+                    show(message, 'danger');
+                }
+            } catch (err) {
+                show('Network error: ' + err.message, 'danger');
+            }
+        });
+
+        function show(text, type) {
+            msg.className = 'alert alert-' + type;
+            msg.textContent = text;
+            msg.hidden = false;
+        }
+    })();
+
+(async function () {
+    const sel = document.getElementById('register-organization');
+    try {
+        const res = await fetch('/SchoolStaff/organizations');
+        if (!res.ok) return;
+        const orgs = await res.json();
+        orgs.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.organizationId ?? o.OrganizationId;
+            opt.textContent = `${o.organizationName ?? o.OrganizationName} (ID: ${o.organizationId ?? o.OrganizationId})`;
+            sel.appendChild(opt);
+        });
+    } catch (e) { console.warn(e); }
+})();
+</script>
